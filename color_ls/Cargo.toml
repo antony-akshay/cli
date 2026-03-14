@@ -6,3 +6,6 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.60", features = ["derive"] }
 owo-colors = "4.3.0"
+strum = { version = "0.28.0", features = ["derive"] }
+strum_macros = "0.28.0"
+tabled = "0.20.0"
