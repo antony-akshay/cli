@@ -1,27 +1,41 @@
+use chrono::{DateTime, Utc};
 use clap::Parser;
 use owo_colors::OwoColorize;
+use serde::Serialize;
 use std::{
-    fs::{self, File},
+    fs::{self},
     path::{Path, PathBuf},
 };
 use strum::Display;
+use tabled::{
+    Table, Tabled,
+    settings::{
+        Color, Style,
+        object::{Columns, Rows},
+    },
+};
 
 #[derive(Debug, Parser)]
 #[command(version)]
 struct Cli {
     path: Option<PathBuf>,
+    #[arg(short, long)]
+    json: bool,
 }
 
-#[derive(Debug, Display)]
+#[derive(Debug, Display, Serialize)]
 enum EntryType {
     File,
     Dir,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Tabled, Serialize)]
 struct FileEntry {
+    #[tabled{rename="Name"}]
     name: String,
+    #[tabled{rename="Type"}]
     e_type: EntryType,
+    #[tabled{rename="Size"}]
     len_bytes: u64,
     modified: String,
 }
@@ -33,8 +47,14 @@ fn main() {
 
     if let Ok(does_exist) = fs::exists(&path) {
         if does_exist {
-            for file in get_files(&path) {
-                println!("{:?}", file);
+            if cli.json {
+                let get_files = get_files(&path);
+                println!(
+                    "{}",
+                    serde_json::to_string(&get_files).unwrap_or("cannot parse json".to_string())
+                );
+            } else {
+                print_table(path);
             }
         } else {
             println!("{}", "Path does not exist".red());
@@ -70,7 +90,23 @@ fn map_data(file: fs::DirEntry, data: &mut Vec<FileEntry>) {
                 EntryType::File
             },
             len_bytes: meta.len(),
-            modified: "".to_string(),
+            modified: if let Ok(mod1) = meta.modified() {
+                let date: DateTime<Utc> = mod1.into();
+                format!("{}", date.format("%a %b %e %Y"))
+            } else {
+                String::default()
+            },
         });
     }
+}
+
+fn print_table(path: PathBuf) {
+    let get_files = get_files(&path);
+    let mut table = Table::new(get_files);
+    table.with(Style::rounded());
+    table.modify(Columns::first(), Color::FG_BRIGHT_CYAN);
+    table.modify(Columns::one(2), Color::FG_BRIGHT_MAGENTA);
+    table.modify(Columns::one(3), Color::FG_BRIGHT_YELLOW);
+    table.modify(Rows::first(), Color::FG_BRIGHT_GREEN);
+    println!("{}", table);
 }
