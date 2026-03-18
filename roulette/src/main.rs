@@ -1,7 +1,21 @@
-use rand;
+use rand::Rng;
+use rand::RngExt;
+use rand::rng;
 
 fn main() {
-    let bullet:f32 = rand::random_range(1.0..6.0);
-    println!("{}",bullet.floor());
-    
+    let mut rng = rng();
+    let bullet: i32 = rng.random_range(1..=5);
+
+    println!("{}", bullet);
+
+    for i in 1..=5 {
+        println!("Pull the trigger");
+
+        if bullet == i {
+            println!("💀 Dead");
+            break;
+        } else {
+            println!("😌 Safe");
+        }
+    }
 }
